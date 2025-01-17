@@ -8,18 +8,24 @@ import 'package:post_list_pagination_search/presentation/bloc/post_event.dart';
 import 'package:post_list_pagination_search/presentation/bloc/post_state.dart';
 import 'package:stream_transform/stream_transform.dart';
 
+/// Duration for throttling events
 const throttleDuration = Duration(milliseconds: 300);
 
+/// Custom event transformer to throttle and drop events
 EventTransformer<E> throttleDroppable<E>(Duration duration) {
   return (events, mapper) {
     return droppable<E>().call(events.throttle(duration), mapper);
   };
 }
 
+/// Bloc for handling post-related events and states
 class PostBloc extends Bloc<PostEvent, PostState> {
   final FetchPostsUseCase fetchPostsUseCase;
   final NetworkInfo networkInfo;
 
+  /// Constructor for PostBloc
+  ///
+  /// Takes [fetchPostsUseCase] and [networkInfo] as required parameters.
   PostBloc({required this.fetchPostsUseCase, required this.networkInfo})
       : super(const PostState()) {
     on<PostFetched>(_onFetched,
@@ -27,11 +33,14 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<SearchPosts>(_onSearchPosts);
   }
 
-  // Fetch Posts Logic (Pagination)
+  /// Event handler for fetching posts with pagination
+  ///
+  /// This method fetches posts and updates the state with the new posts.
+  /// If there are no more posts to fetch, it sets [hasReachedMax] to true.
   Future<void> _onFetched(
-    PostFetched event,
-    Emitter<PostState> emit,
-  ) async {
+      PostFetched event,
+      Emitter<PostState> emit,
+      ) async {
     if (state.hasReachedMax) return;
 
     try {
@@ -45,9 +54,9 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       final filteredPosts = state.query.isEmpty
           ? allPosts
           : allPosts
-              .where((post) =>
-                  post.title.toLowerCase().contains(state.query.toLowerCase()))
-              .toList();
+          .where((post) =>
+          post.title.toLowerCase().contains(state.query.toLowerCase()))
+          .toList();
 
       emit(state.copyWith(
         status: PostStatus.success,
@@ -59,14 +68,16 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     }
   }
 
-  // Search Posts Logic
+  /// Event handler for searching posts
+  ///
+  /// This method filters the posts based on the search query and updates the state.
   Future<void> _onSearchPosts(
-    SearchPosts event,
-    Emitter<PostState> emit,
-  ) async {
+      SearchPosts event,
+      Emitter<PostState> emit,
+      ) async {
     final filteredPosts = state.allPosts
         .where((post) =>
-            post.title.toLowerCase().contains(event.query.toLowerCase()))
+        post.title.toLowerCase().contains(event.query.toLowerCase()))
         .toList();
 
     emit(state.copyWith(query: event.query, filteredPosts: filteredPosts));
