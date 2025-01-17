@@ -1,41 +1,40 @@
+import 'package:equatable/equatable.dart';
 import 'package:post_list_pagination_search/domain/entities/post.dart';
 
-sealed class PostState {}
+enum PostStatus { initial, success, failure }
 
-class PostInitial extends PostState {}
-
-class PostLoading extends PostState {
-  PostLoading({
-    required this.posts,
-    required this.isFirstFetch,
-  });
-
-  final List<Post> posts;
-  final bool isFirstFetch;
-}
-
-class PostLoaded extends PostState {
-  PostLoaded({
-    required this.posts,
+final class PostState extends Equatable {
+  const PostState({
+    this.status = PostStatus.initial,
+    this.allPosts = const <Post>[],
+    this.filteredPosts = const <Post>[],
+    this.query = '',
     this.hasReachedMax = false,
   });
 
-  final List<Post> posts;
+  final PostStatus status;
+  final List<Post> allPosts;
+  final List<Post> filteredPosts;
+  final String query;
   final bool hasReachedMax;
-}
 
-class PostSearchResult extends PostState {
-  final List<Post> posts;
+  PostState copyWith({
+    PostStatus? status,
+    List<Post>? allPosts,
+    List<Post>? filteredPosts,
+    String? query,
+    bool? hasReachedMax,
+  }) {
+    return PostState(
+      status: status ?? this.status,
+      allPosts: allPosts ?? this.allPosts,
+      filteredPosts: filteredPosts ?? this.filteredPosts,
+      query: query ?? this.query,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
+    );
+  }
 
-  PostSearchResult({
-    required this.posts,
-  });
-}
-
-class PostError extends PostState {
-  PostError({
-    required this.errorMessage,
-  });
-
-  final String errorMessage;
+  @override
+  List<Object> get props =>
+      [status, allPosts, filteredPosts, query, hasReachedMax];
 }

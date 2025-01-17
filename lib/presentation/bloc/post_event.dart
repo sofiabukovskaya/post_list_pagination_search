@@ -1,21 +1,17 @@
-sealed class PostEvent {}
+import 'package:equatable/equatable.dart';
 
-class FetchPosts extends PostEvent {
-  final int page;
-  final int limit;
-  final bool isRefresh;
-
-  FetchPosts({
-    required this.page,
-    required this.limit,
-    this.isRefresh = false,
-  });
+sealed class PostEvent extends Equatable {
+  @override
+  List<Object> get props => [];
 }
 
-class SearchPost extends PostEvent {
+final class PostFetched extends PostEvent {}
+
+final class SearchPosts extends PostEvent {
   final String query;
 
-  SearchPost({
-    required this.query,
-  });
+  SearchPosts(this.query);
+
+  @override
+  List<Object> get props => [query];
 }

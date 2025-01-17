@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:post_list_pagination_search/core/network/network_info.dart';
 import 'package:post_list_pagination_search/core/theming/app_theme.dart';
 import 'package:post_list_pagination_search/di/service_locator.dart';
+import 'package:post_list_pagination_search/domain/usecases/fetch_posts_use_case.dart';
+import 'package:post_list_pagination_search/presentation/bloc/post_bloc.dart';
+import 'package:post_list_pagination_search/presentation/bloc/post_event.dart';
 import 'package:post_list_pagination_search/presentation/screens/home_screen.dart';
 
 void main() {
@@ -28,7 +33,15 @@ class MyApp extends StatelessWidget {
           darkSimpleTheme,
         ],
       ),
-      home: HomeScreen(),
+      home: BlocProvider<PostBloc>(
+        create: (_) => PostBloc(
+          fetchPostsUseCase: sl.get<FetchPostsUseCase>(),
+          networkInfo: sl.get<NetworkInfo>(),
+        )..add(
+            PostFetched(),
+          ),
+        child: HomeScreen(),
+      ),
     );
   }
 }

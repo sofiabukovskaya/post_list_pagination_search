@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:get_it/get_it.dart';
 import 'package:post_list_pagination_search/core/network/network_info.dart';
 import 'package:http/http.dart' as http;
@@ -12,6 +13,7 @@ final sl = GetIt.instance;
 void setupDependencies() {
   // External
   sl.registerLazySingleton(() => http.Client());
+  sl.registerLazySingleton(() => Connectivity());
 
   // Utils
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
@@ -29,5 +31,6 @@ void setupDependencies() {
   sl.registerLazySingleton(() => FetchPostsUseCase(postRepository: sl()));
 
   // Blocs
-  sl.registerFactory(() => PostBloc(fetchPosts: sl(), networkInfo: sl()));
+  sl.registerFactory(
+      () => PostBloc(fetchPostsUseCase: sl(), networkInfo: sl()));
 }

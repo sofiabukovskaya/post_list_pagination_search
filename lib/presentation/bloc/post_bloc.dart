@@ -1,91 +1,74 @@
+import 'dart:async';
+
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:post_list_pagination_search/core/network/network_info.dart';
-import 'package:post_list_pagination_search/domain/entities/post.dart';
 import 'package:post_list_pagination_search/domain/usecases/fetch_posts_use_case.dart';
 import 'package:post_list_pagination_search/presentation/bloc/post_event.dart';
 import 'package:post_list_pagination_search/presentation/bloc/post_state.dart';
+import 'package:stream_transform/stream_transform.dart';
+
+const throttleDuration = Duration(milliseconds: 300);
+
+EventTransformer<E> throttleDroppable<E>(Duration duration) {
+  return (events, mapper) {
+    return droppable<E>().call(events.throttle(duration), mapper);
+  };
+}
 
 class PostBloc extends Bloc<PostEvent, PostState> {
-  final FetchPostsUseCase fetchPosts;
+  final FetchPostsUseCase fetchPostsUseCase;
   final NetworkInfo networkInfo;
 
-  PostBloc({
-    required this.fetchPosts,
-    required this.networkInfo,
-  }) : super(PostInitial()) {
-    on<FetchPosts>(_onFetchPosts);
-    on<SearchPost>(_onSearchPost);
+  PostBloc({required this.fetchPostsUseCase, required this.networkInfo})
+      : super(const PostState()) {
+    on<PostFetched>(_onFetched,
+        transformer: throttleDroppable(throttleDuration));
+    on<SearchPosts>(_onSearchPosts);
   }
 
-  void _onFetchPosts(
-    FetchPosts event,
+  // Fetch Posts Logic (Pagination)
+  Future<void> _onFetched(
+    PostFetched event,
     Emitter<PostState> emit,
   ) async {
-    if (state is PostLoading) return;
-
-    final currentState = state;
-
-    List<Post> oldPosts = [];
-
-    if (currentState is PostLoaded && !event.isRefresh) {
-      oldPosts = currentState.posts;
-    }
-
-    emit(
-      PostLoading(
-        posts: oldPosts,
-        isFirstFetch: oldPosts.isEmpty,
-      ),
-    );
-
-    final isConnected = await networkInfo.isConnected;
-    if (!isConnected) {
-      emit(
-        PostError(
-            errorMessage: 'No Internet connection. Please try again later.'),
-      );
-      return;
-    }
+    if (state.hasReachedMax) return;
 
     try {
-      final posts = await fetchPosts(event.page, event.limit);
-      final allPosts = [...oldPosts, ...posts];
-      emit(
-        PostLoaded(posts: allPosts, hasReachedMax: posts.isEmpty),
-      );
-    } catch (e) {
-      emit(
-        PostError(
-          errorMessage: 'Fail to load posts: ${e.toString()}',
-        ),
-      );
+      final posts = await fetchPostsUseCase(state.allPosts.length, 20);
+
+      if (posts.isEmpty) {
+        return emit(state.copyWith(hasReachedMax: true));
+      }
+
+      final allPosts = [...state.allPosts, ...posts];
+      final filteredPosts = state.query.isEmpty
+          ? allPosts
+          : allPosts
+              .where((post) =>
+                  post.title.toLowerCase().contains(state.query.toLowerCase()))
+              .toList();
+
+      emit(state.copyWith(
+        status: PostStatus.success,
+        allPosts: allPosts,
+        filteredPosts: filteredPosts,
+      ));
+    } catch (_) {
+      emit(state.copyWith(status: PostStatus.failure));
     }
   }
 
-  void _onSearchPost(
-    SearchPost event,
+  // Search Posts Logic
+  Future<void> _onSearchPosts(
+    SearchPosts event,
     Emitter<PostState> emit,
-  ) {
-    if (event.query.isEmpty) {
-      emit(
-        PostLoaded(
-          posts: [],
-        ),
-      );
-      return;
-    }
-
-    final filteredPosts = (state as PostLoaded)
-        .posts
-        .where(
-          (post) => post.title.toLowerCase().contains(
-                event.query.toLowerCase(),
-              ),
-        )
+  ) async {
+    final filteredPosts = state.allPosts
+        .where((post) =>
+            post.title.toLowerCase().contains(event.query.toLowerCase()))
         .toList();
 
-    emit(
-      PostSearchResult(posts: filteredPosts),
-    );
+    emit(state.copyWith(query: event.query, filteredPosts: filteredPosts));
   }
 }
