@@ -5,6 +5,7 @@ import 'package:post_list_pagination_search/data/datasources/remote/post_remote_
 import 'package:post_list_pagination_search/data/repositories/post_repository_impl.dart';
 import 'package:post_list_pagination_search/domain/repositories/post_repository.dart';
 import 'package:post_list_pagination_search/domain/usecases/fetch_posts_use_case.dart';
+import 'package:post_list_pagination_search/presentation/bloc/post_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -25,5 +26,8 @@ void setupDependencies() {
       () => PostRepositoryImpl(remoteDataSource: sl()));
 
   // Use cases
-  sl.registerLazySingleton(() => FetchPosts(postRepository: sl()));
+  sl.registerLazySingleton(() => FetchPostsUseCase(postRepository: sl()));
+
+  // Blocs
+  sl.registerFactory(() => PostBloc(fetchPosts: sl(), networkInfo: sl()));
 }

@@ -1,8 +1,8 @@
 import 'package:post_list_pagination_search/domain/entities/post.dart';
 import 'package:post_list_pagination_search/domain/repositories/post_repository.dart';
 
-final class FetchPosts {
-  const FetchPosts({
+final class FetchPostsUseCase {
+  const FetchPostsUseCase({
     required this.postRepository,
   });
 

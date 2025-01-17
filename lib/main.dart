@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:post_list_pagination_search/core/theming/app_theme.dart';
 import 'package:post_list_pagination_search/di/service_locator.dart';
+import 'package:post_list_pagination_search/presentation/screens/home_screen.dart';
 
 void main() {
   setupDependencies();
@@ -27,7 +28,7 @@ class MyApp extends StatelessWidget {
           darkSimpleTheme,
         ],
       ),
-      home: const SizedBox(),
+      home: HomeScreen(),
     );
   }
 }

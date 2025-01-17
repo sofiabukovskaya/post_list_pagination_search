@@ -17,7 +17,7 @@ class PostLoading extends PostState {
 class PostLoaded extends PostState {
   PostLoaded({
     required this.posts,
-    required this.hasReachedMax,
+    this.hasReachedMax = false,
   });
 
   final List<Post> posts;
